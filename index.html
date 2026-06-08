@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elstödsberäknare 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e1c2b;
+    --ink-soft:#46586b;
+    --line:#e4e9f0;
+    --bg:#eef2f7;
+    --card:#ffffff;
+    --blue:#005a9c;
+    --blue-dark:#00406f;
+    --blue-tint:#e9f1fb;
+    --money:#0f7a4d;
+    --money-tint:#e7f6ee;
+    --warn:#9a5b00;
+    --warn-bg:#fdf3e2;
+    --warn-line:#f0cf95;
+    --radius:18px;
+    --shadow:0 18px 48px -18px rgba(6,30,58,.28), 0 2px 6px -2px rgba(6,30,58,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(900px 500px at 85% -10%, #dce8f6 0%, rgba(220,232,246,0) 60%),
+      radial-gradient(700px 480px at -10% 110%, #e3edf7 0%, rgba(227,237,247,0) 55%),
+      var(--bg);
+    min-height:100vh;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:28px 16px 64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    width:100%; max-width:480px;
+    padding:30px 28px;
+    animation:rise .5s cubic-bezier(.2,.7,.2,1) both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .eyebrow{
+    font-size:.74rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--blue); margin:0 0 6px;
+  }
+  h1{font-size:1.55rem; font-weight:800; letter-spacing:-.02em; margin:0; line-height:1.15}
+  .sub{color:var(--ink-soft); font-size:.92rem; margin:8px 0 0}
+
+  label{display:block; font-weight:700; font-size:.86rem; margin:24px 0 9px; letter-spacing:.01em}
+  .hint{font-weight:500; color:var(--ink-soft)}
+
+  /* Segmented elområde-väljare */
+  .seg{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+  .seg button{
+    appearance:none; cursor:pointer;
+    background:#fff; border:1.5px solid var(--line); border-radius:12px;
+    padding:11px 6px 10px; text-align:center; transition:.16s ease;
+    font-family:inherit; color:var(--ink); line-height:1.1;
+  }
+  .seg button:hover{border-color:#bcd0e6; background:#f8fbff}
+  .seg button .zone{display:block; font-weight:800; font-size:.98rem; letter-spacing:-.01em}
+  .seg button .rate{display:block; font-weight:700; font-size:.78rem; color:var(--blue); margin-top:3px}
+  .seg button .region{display:block; font-size:.66rem; color:var(--ink-soft); margin-top:3px; letter-spacing:.02em}
+  .seg button[aria-pressed="true"]{
+    background:var(--blue); border-color:var(--blue);
+    box-shadow:0 8px 18px -8px rgba(0,90,156,.6);
+  }
+  .seg button[aria-pressed="true"] .zone,
+  .seg button[aria-pressed="true"] .rate,
+  .seg button[aria-pressed="true"] .region{color:#fff}
+  .seg button[aria-pressed="true"] .region{opacity:.85}
+
+  /* Input */
+  .field{position:relative}
+  input{
+    width:100%; font-family:inherit; font-size:1.18rem; font-weight:700;
+    padding:14px 64px 14px 16px; border:1.5px solid var(--line); border-radius:12px;
+    color:var(--ink); background:#fff; transition:.16s ease; font-variant-numeric:tabular-nums;
+  }
+  input::placeholder{color:#aab7c6; font-weight:600}
+  input:focus{outline:none; border-color:var(--blue); box-shadow:0 0 0 4px var(--blue-tint)}
+  input.invalid{border-color:#c0392b; box-shadow:0 0 0 4px #fbeae8}
+  .unit{position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--ink-soft); font-weight:700; font-size:.92rem; pointer-events:none}
+  .err{display:none; color:#c0392b; font-size:.8rem; font-weight:600; margin:7px 2px 0}
+  .err.show{display:block}
+
+  /* Resultat */
+  .result{
+    margin-top:24px; border-radius:14px; overflow:hidden;
+    border:1px solid var(--money-tint); background:linear-gradient(180deg,#f4fbf7,#eef9f2);
+    opacity:0; transform:translateY(8px); transition:opacity .3s ease, transform .3s ease;
+  }
+  .result.show{opacity:1; transform:none}
+  .result .top{padding:20px 20px 16px}
+  .result .reskap{font-size:.78rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--money); margin:0 0 4px}
+  .amount{font-size:2.55rem; font-weight:800; letter-spacing:-.03em; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1}
+  .amount .kr{font-size:1.25rem; font-weight:700; color:var(--ink-soft); margin-left:6px; letter-spacing:0}
+  .breakdown{margin-top:10px; color:var(--ink-soft); font-size:.9rem; font-weight:600; font-variant-numeric:tabular-nums}
+  .breakdown b{color:var(--ink); font-weight:800}
+
+  .capnote{
+    display:none; gap:10px; align-items:flex-start;
+    margin:0; padding:12px 16px; background:var(--warn-bg); border-top:1px solid var(--warn-line);
+    color:var(--warn); font-size:.82rem; font-weight:600; line-height:1.4;
+  }
+  .capnote.show{display:flex}
+  .capnote svg{flex:0 0 auto; margin-top:1px}
+
+  /* Bra att veta */
+  details{margin-top:22px; border:1px solid var(--line); border-radius:12px; background:#fbfcfe}
+  summary{cursor:pointer; list-style:none; padding:13px 16px; font-weight:700; font-size:.9rem; display:flex; justify-content:space-between; align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary .chev{transition:transform .2s ease; color:var(--ink-soft)}
+  details[open] summary .chev{transform:rotate(180deg)}
+  .facts{padding:2px 16px 16px}
+  .facts ul{margin:0; padding-left:18px}
+  .facts li{font-size:.84rem; color:var(--ink-soft); line-height:1.5; margin-bottom:9px}
+  .facts li b{color:var(--ink); font-weight:700}
+  .scam{margin:10px 0 0; padding:10px 12px; background:#fdeceb; border-radius:9px; color:#a23029; font-size:.8rem; font-weight:600; line-height:1.45}
+
+  footer{margin-top:20px; font-size:.72rem; color:#8492a2; line-height:1.5}
+  footer a{color:var(--blue); text-decoration:none; font-weight:600}
+  footer a:hover{text-decoration:underline}
+
+  @media (max-width:380px){
+    .card{padding:24px 18px}
+    .amount{font-size:2.2rem}
+    .seg button .zone{font-size:.9rem}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important; transition:none !important}
+  }
+</style>
+</head>
+<body>
+<main class="card">
+  <p class="eyebrow">Tillfälligt elstöd · jan–feb 2026</p>
+  <h1>Elstödsberäknare 2026</h1>
+  <p class="sub">Räknar ut ditt elstöd på förbrukningen under januari–februari 2026. Taket på 10&nbsp;000&nbsp;kWh per bostad är inräknat.</p>
+
+  <label>Elområde</label>
+  <div class="seg" id="seg" role="group" aria-label="Välj elområde">
+    <button type="button" data-rate="0.14" data-ore="14" aria-pressed="false">
+      <span class="zone">SE1–2</span><span class="rate">14 öre/kWh</span><span class="region">Norra</span>
+    </button>
+    <button type="button" data-rate="0.26" data-ore="26" aria-pressed="false">
+      <span class="zone">SE3</span><span class="rate">26 öre/kWh</span><span class="region">Mellan + Gotland</span>
+    </button>
+    <button type="button" data-rate="0.29" data-ore="29" aria-pressed="false">
+      <span class="zone">SE4</span><span class="rate">29 öre/kWh</span><span class="region">Södra</span>
+    </button>
+  </div>
+
+  <label for="consumption">Förbrukning jan–feb 2026 <span class="hint">(kWh, hittas på elnätsfakturan)</span></label>
+  <div class="field">
+    <input type="text" inputmode="decimal" id="consumption" placeholder="t.ex. 5000" autocomplete="off" aria-describedby="err">
+    <span class="unit">kWh</span>
+  </div>
+  <p class="err" id="err" role="alert">Ange en giltig förbrukning (0 eller högre).</p>
+
+  <section class="result" id="result" aria-live="polite">
+    <div class="top">
+      <p class="reskap">Beräknat elstöd</p>
+      <div class="amount"><span id="amount">0</span><span class="kr">kr</span></div>
+      <p class="breakdown" id="breakdown"></p>
+    </div>
+    <div class="capnote" id="capnote">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18.5A2 2 0 0 0 3.5 21.5h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="captext"></span>
+    </div>
+  </section>
+
+  <details>
+    <summary>Bra att veta <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="facts">
+      <ul>
+        <li><b>Vem får stödet:</b> den som stod på <b>elnätsavtalet</b> (inte elhandelsavtalet) den 28 februari 2026.</li>
+        <li><b>Ingen ansökan:</b> betalas ut automatiskt via Försäkringskassan. Elnätsbolaget rapporterar din förbrukning.</li>
+        <li><b>Utbetalning:</b> planeras starta i juni 2026, till kontot i Swedbanks kontoregister – anmäl ditt konto där om du inte gjort det.</li>
+        <li><b>Tak:</b> max 10&nbsp;000&nbsp;kWh per bostad räknas. Förbrukning över taket ger inget extra stöd.</li>
+        <li><b>Inte samma som högkostnadsskyddet</b>, som triggas om månadens snittspotpris överstiger 1,50&nbsp;kr/kWh i ditt elområde.</li>
+      </ul>
+      <p class="scam">⚠️ Ingen myndighet eller bank ringer, sms:ar eller mejlar för att be om kontouppgifter eller BankID kring elstödet. Det är bedrägeri – avsluta kontakten.</p>
+    </div>
+  </details>
+
+  <footer>
+    FAKTA: ersättningsnivåer och tak enligt regeringens beslut (extra ändringsbudget, antagen av riksdagen april 2026).
+    Källa: <a href="https://www.regeringen.se/regeringens-politik/energi/fragor-och-svar-om-det-tillfalliga-el--och-gasstodet/" target="_blank" rel="noopener">regeringen.se</a> · Försäkringskassan.
+  </footer>
+</main>
+
+<script>
+  const CAP = 10000;
+  const seg = document.getElementById('seg');
+  const buttons = [...seg.querySelectorAll('button')];
+  const input = document.getElementById('consumption');
+  const errEl = document.getElementById('err');
+  const result = document.getElementById('result');
+  const amountEl = document.getElementById('amount');
+  const breakdownEl = document.getElementById('breakdown');
+  const capnote = document.getElementById('capnote');
+  const captext = document.getElementById('captext');
+
+  let rate = null, ore = null, lastShown = 0;
+  const reduceMotion = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  const nf = (v) => new Intl.NumberFormat('sv-SE', {
+    minimumFractionDigits: Number.isInteger(v) ? 0 : 2,
+    maximumFractionDigits: 2
+  }).format(v);
+  const nfInt = (v) => new Intl.NumberFormat('sv-SE').format(v);
+
+  function parseInput(){
+    const raw = input.value.trim().replace(/\s/g,'').replace(',', '.');
+    if (raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function countUp(to){
+    if (reduceMotion){ amountEl.textContent = nf(to); lastShown = to; return; }
+    const from = lastShown, start = performance.now(), dur = 380;
+    function step(t){
+      const p = Math.min((t - start)/dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      amountEl.textContent = nf(+(from + (to - from)*eased).toFixed(2));
+      if (p < 1) requestAnimationFrame(step); else { amountEl.textContent = nf(to); lastShown = to; }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function calculate(){
+    const val = parseInput();
+
+    // Tomt eller inget elområde valt → dölj resultat
+    if (val === null || rate === null){
+      result.classList.remove('show');
+      input.classList.remove('invalid'); errEl.classList.remove('show');
+      return;
+    }
+    // Ogiltigt
+    if (Number.isNaN(val) || val < 0){
+      input.classList.add('invalid'); errEl.classList.add('show');
+      result.classList.remove('show');
+      return;
+    }
+    input.classList.remove('invalid'); errEl.classList.remove('show');
+
+    const effective = Math.min(val, CAP);
+    const total = +(effective * rate).toFixed(2);
+
+    breakdownEl.innerHTML = `<b>${nfInt(effective)} kWh</b> × ${ore} öre/kWh`;
+
+    if (val > CAP){
+      capnote.classList.add('show');
+      captext.textContent = `Din förbrukning (${nfInt(val)} kWh) överstiger taket. Stödet beräknas på 10 000 kWh.`;
+    } else {
+      capnote.classList.remove('show');
+    }
+
+    result.classList.add('show');
+    countUp(total);
+  }
+
+  buttons.forEach(b => b.addEventListener('click', () => {
+    buttons.forEach(x => x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    rate = parseFloat(b.dataset.rate);
+    ore = b.dataset.ore;
+    calculate();
+  }));
+
+  input.addEventListener('input', calculate);
+</script>
+</body>
+</html>
